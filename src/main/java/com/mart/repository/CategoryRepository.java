@@ -8,9 +8,9 @@ import org.springframework.stereotype.Repository;
 import com.mart.entity.Category;
 
 @Repository
-public interface CategoryRepository extends JpaRepository<Category, Integer> {
+public interface CategoryRepository extends JpaRepository<Category, Long> {
 
-	Optional<Category> findById(int id);
+	Optional<Category> findById(long categoryId);
 
 	Optional<Category> findByName(String name);
 

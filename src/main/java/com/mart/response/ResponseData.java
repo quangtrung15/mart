@@ -1,4 +1,4 @@
-package com.mart.request;
+package com.mart.response;
 
 public class ResponseData {
 

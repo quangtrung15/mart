@@ -1,8 +1,17 @@
 package com.mart.entity;
 
+import java.util.Date;
+import java.util.Set;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
 @Embeddable
 public class KeyUserRole {
 
@@ -11,31 +20,5 @@ public class KeyUserRole {
 
 	@Column(name = "role_id")
 	private int roleId;
-
-	public KeyUserRole() {
-		super();
-	}
-
-	public KeyUserRole(int userId, int roleId) {
-		super();
-		this.userId = userId;
-		this.roleId = roleId;
-	}
-
-	public int getUserId() {
-		return userId;
-	}
-
-	public void setUserId(int userId) {
-		this.userId = userId;
-	}
-
-	public int getRoleId() {
-		return roleId;
-	}
-
-	public void setRoleId(int roleId) {
-		this.roleId = roleId;
-	}
 
 }

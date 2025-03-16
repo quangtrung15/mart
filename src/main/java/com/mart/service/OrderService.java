@@ -5,21 +5,29 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.mart.dto.OrderDTO;
+import com.mart.entity.Order;
 import com.mart.entity.OrderDetail;
 
 @Service
 public interface OrderService {
 
-	boolean createOrder(int userId, String address, String createdDate, List<OrderDetail> orderDetails, String payment,
-			String phone);
+	// Create Order
+	OrderDTO createOrder(long userId, String address, List<OrderDetail> orderDetails, String payment, String phone);
 
-	boolean updateOrder(int orderId, int userId, String updatedDate, String address, List<OrderDetail> orderDetails,
+	// Update Order
+	OrderDTO updateOrder(long orderId, long userId, String updatedDate, String address, List<OrderDetail> orderDetails,
 			String payment, String phone);
 
-	boolean deleteOrder(int orderId);
+	// Delete Order
+	boolean deleteOrder(long orderId);
 
-	List<OrderDTO> getOrderByUserId(int userId);
+	// Display order list by user
+	List<OrderDTO> getOrderByUserId(long userId);
 
-	boolean changeOrderStatus(int userId, int orderId, String status);
+	OrderDTO changeOrderStatus(long userId, long orderId, String status);
+
+	String orderPayment(long orderId);
+	
+	void updateOrderPaymentStatus(String orderId, String status);
 
 }

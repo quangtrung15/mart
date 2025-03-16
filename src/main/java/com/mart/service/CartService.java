@@ -11,14 +11,14 @@ import com.mart.entity.CartDetail;
 @Service
 public interface CartService {
 
-	Cart createCart(int userId, String createdDate, List<CartDetail> cartDetails);
+	CartDTO createCart(long userId, List<CartDetail> cartDetails);
 
-	Cart updateCart(int userId, int cartId, String updatedDate, List<CartDetail> cartDetails);
+	CartDTO updateCart(long userId, long cartId, String updatedDate, List<CartDetail> cartDetails);
 
-	boolean deleteCart(int cartId);
+	boolean deleteCart(long cartId);
 
-	List<CartDTO> getCartByUserId(int userId);
+	List<CartDTO> getCartByUserId(long userId);
 
-	CartDTO getCartById(int cartId);
+	CartDTO getCartById(long cartId);
 
 }

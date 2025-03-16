@@ -3,12 +3,12 @@ package com.mart.service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.mart.dto.CategoryDTO;
@@ -27,14 +27,19 @@ public class CategoryServiceImpl implements CategoryService {
 	@Autowired
 	ProductRepository productRepository;
 
-	// Hiển thị danh sách sản phẩm với từng thể loại.
+	// Display product list by category
 	@Override
-	public CategoryDTO getProductsByCategoryId(int id) {
+	public CategoryDTO getProductsByCategoryId(long categoryId) {
 
 		try {
 
-			Category category = categoryRepository.findById(id)
-					.orElseThrow(() -> new RuntimeException("Category with ID " + id + " not found!"));
+			Optional<Category> categoryOptional = categoryRepository.findById(categoryId);
+
+			if (categoryOptional.isEmpty()) {
+				throw new RuntimeException("Category not found!");
+			}
+
+			Category category = categoryOptional.get();
 
 			CategoryDTO categoryDTO = new CategoryDTO();
 			categoryDTO.setId(category.getId());
@@ -43,15 +48,8 @@ public class CategoryServiceImpl implements CategoryService {
 			List<ProductDTO> productDTOs = new ArrayList<>();
 
 			for (Product data : category.getProducts()) {
-				ProductDTO productDTO = new ProductDTO();
-				productDTO.setId(data.getId());
-				productDTO.setImage(data.getImage());
-				productDTO.setName(data.getName());
-				productDTO.setPrice(data.getPrice());
-				productDTO.setPromo(data.getPromo());
-				productDTO.setQuantity(data.getQuantity());
-				productDTO.setDescription(data.getDescription());
-				productDTO.setStatus(data.getStatus());
+
+				ProductDTO productDTO = new ProductDTO(data);
 				productDTOs.add(productDTO);
 			}
 
@@ -60,79 +58,121 @@ public class CategoryServiceImpl implements CategoryService {
 			return categoryDTO;
 
 		} catch (Exception e) {
-			throw new RuntimeException("Lỗi khi lấy danh sách sản phẩm theo thể loại", e);
+			throw new RuntimeException("Error displaying product list by category!", e);
 		}
 
 	}
 
-	// Tìm kiếm sản phẩm theo thể loại, khoảng giá, tên, thương hiệu.
+	// Search products by category, price range, name, brand
 	@Override
-	public List<CategoryDTO> findByProducts(Integer category_id, Double minPrice, Double maxPrice, String name,
+	public List<CategoryDTO> findByProducts(Long category_id, Double minPrice, Double maxPrice, String name,
 			String brand) {
 		try {
 			List<Product> products = productRepository.findByCategoryIdAndPriceRangeAndNameAndBrand(category_id,
 					minPrice, maxPrice, name, brand);
 
 			if (products.isEmpty()) {
-				return Collections.emptyList(); // Trả về danh sách rỗng thay vì null
+				return Collections.emptyList(); // Return empty list instead of null
 			}
 
-			Map<Integer, CategoryDTO> categoryMap = new HashMap<>(); // Dùng Map để nhóm theo category_id
+			Map<Long, CategoryDTO> categoryMap = new HashMap<>(); // Use Map to group by category_id
 
 			for (Product data : products) {
-				int catId = data.getCategory().getId(); // Lấy category_id của sản phẩm
+				long catId = data.getCategory().getId(); // Get the category_id of the product
 
-				// Nếu CategoryDTO chưa có trong Map, thì tạo mới
+				// If CategoryDTO is not in Map then create new one
 				CategoryDTO categoryDTO = categoryMap.getOrDefault(catId, new CategoryDTO());
 				categoryDTO.setName(data.getCategory().getName());
-				categoryDTO.setId(data.getCategory().getId()); // Nếu danh sách sản phẩm chưa có, tạo mới
+				categoryDTO.setId(data.getCategory().getId()); // If the product list does not exist, create a new one
 				if (categoryDTO.getProductDTOs() == null) {
 					categoryDTO.setProductDTOs(new ArrayList<>());
 				}
 
-				// Chuyển đổi Product -> ProductDTO
-				ProductDTO productDTO = new ProductDTO();
-				productDTO.setId(data.getId());
-				productDTO.setImage(data.getImage());
-				productDTO.setName(data.getName());
-				productDTO.setPrice(data.getPrice());
-				productDTO.setDescription(data.getDescription());
-				productDTO.setQuantity(data.getQuantity());
-				productDTO.setPromo(data.getPromo());
-				productDTO.setStatus(data.getStatus());
-				productDTO.setBrand(data.getBrand());
+				// Product -> ProductDTO
+				ProductDTO productDTO = new ProductDTO(data);
 
-				// Thêm sản phẩm vào danh sách của CategoryDTO
+				// Add products to CategoryDTO list
 				categoryDTO.getProductDTOs().add(productDTO);
 
-				// Thêm vào Map nếu chưa có
+				// Add to Map if not already there
 				categoryMap.put(catId, categoryDTO);
 			}
 
-			// Trả về danh sách các CategoryDTO
+			// Returns a list of CategoryDTOs
 			return new ArrayList<>(categoryMap.values());
 
 		} catch (Exception e) {
 			System.out.println("Error: " + e.getMessage());
-			return Collections.emptyList(); // Tránh return null
+			return Collections.emptyList(); // Avoid returning null
 		}
 	}
 
 	@Override
-	public boolean addCategory(String name) {
+	public Category addCategory(String name) {
 		try {
 			if (categoryRepository.findByName(name).isPresent()) {
-				return false;
+				throw new RuntimeException("The category already exists!");
 			}
 
 			Category category = new Category();
 			category.setName(name);
-			categoryRepository.save(category);
-			return true;
+
+			return categoryRepository.save(category);
 
 		} catch (Exception e) {
-			throw new RuntimeException("Không thể thêm sản phẩm", e);
+			throw new RuntimeException("Error adding category!", e);
 		}
+	}
+
+	@Override
+	public List<CategoryDTO> getCategory() {
+
+		try {
+
+			List<Category> categories = categoryRepository.findAll();
+			List<CategoryDTO> categoryDTOs = new ArrayList<>();
+			for (Category data : categories) {
+
+				categoryDTOs.add(CategoryDTO.toBasicCategoryDTO(data));
+
+			}
+
+			return categoryDTOs;
+
+		} catch (Exception e) {
+			throw new RuntimeException("Error displaying category list!", e);
+		}
+
+	}
+
+	@Override
+	public CategoryDTO updateCategory(long categoryId, String name) {
+
+		try {
+			Optional<Category> categoryOptional = categoryRepository.findById(categoryId);
+			if (categoryOptional.isEmpty()) {
+				throw new RuntimeException("Error type not found with Id " + categoryId);
+			}
+			Category category = categoryOptional.get();
+			category.setName(name);
+			Category saveCategory = categoryRepository.save(category);
+			return CategoryDTO.toBasicCategoryDTO(saveCategory);
+		} catch (Exception e) {
+			throw new RuntimeException("Error update category!", e);
+		}
+
+	}
+
+	@Override
+	public boolean deleteCategory(long categoryId) {
+
+		try {
+			categoryRepository.deleteById(categoryId);
+			return true;
+		} catch (Exception e) {
+			throw new RuntimeException("Error delete category!", e);
+		}
+
 	}
 
 }

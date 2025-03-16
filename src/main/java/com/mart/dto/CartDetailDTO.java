@@ -1,23 +1,23 @@
 package com.mart.dto;
 
+import com.mart.entity.CartDetail;
+import com.mart.entity.OrderDetail;
+
+import lombok.Data;
+
+@Data
 public class CartDetailDTO {
-	
+
 	private int quantity;
 	private ProductDTO productDTO;
-	
-	public int getQuantity() {
-		return quantity;
+
+	public CartDetailDTO(CartDetail cartDetail) {
+		this.quantity = cartDetail.getQuantity();
+		this.productDTO = new ProductDTO(cartDetail.getProduct());
 	}
-	public void setQuantity(int quantity) {
-		this.quantity = quantity;
+
+	public CartDetailDTO() {
+		super();
 	}
-	public ProductDTO getProductDTO() {
-		return productDTO;
-	}
-	public void setProductDTO(ProductDTO productDTO) {
-		this.productDTO = productDTO;
-	}
-	
-	
-	
+
 }

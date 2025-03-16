@@ -14,13 +14,16 @@ public interface CartDetailRepository extends JpaRepository<CartDetail, KeyCartD
 
 	CartDetail findByCartIdAndProductId(int cartId, int productId);
 
-	@Transactional
-	default void deleteByCartId(int cartId) {
-		List<CartDetail> cartDetails = findAll().stream().filter(cd -> cd.getKeyCartDetail().getCartId() == cartId)
-				.toList();
-		deleteAll(cartDetails);
-	}
+//	@Transactional
+//	default void deleteByCartId(int cartId) {
+//		List<CartDetail> cartDetails = findAll().stream().filter(cd -> cd.getKeyCartDetail().getCartId() == cartId)
+//				.toList();
+//		deleteAll(cartDetails);
+//	}
 
-	List<CartDetail> findByCartId(int cartId);
+	@Transactional
+	void deleteByCartId(long cartId);
+	
+	List<CartDetail> findByCartId(long cartId);
 
 }

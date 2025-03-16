@@ -10,9 +10,9 @@ import com.mart.entity.OrderDetail;
 @Repository
 public interface OrderDetailRepository extends JpaRepository<OrderDetail, KeyOrderDetail>{
 
-	OrderDetail findByOrderIdAndProductId(int orderId, int productId);
+	OrderDetail findByOrderIdAndProductId(long orderId, long productId);
 	
 	@Transactional
-	void deleteByOrderId(int orderId);
+	void deleteByOrderId(long orderId);
 	
 }

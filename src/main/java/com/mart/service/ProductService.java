@@ -6,14 +6,29 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.mart.dto.ProductDTO;
+import com.mart.entity.Product;
 
 @Service
 public interface ProductService {
 
-	// Hiển thị sản phẩm theo trạng thái.
+	// Display products by status.
 	List<ProductDTO> getProductsByStatus(String status);
 
-	boolean addProduct(String name, MultipartFile file, String description, double price, int quantity, int promo,
-			String status, String brand, int categoryId);
+	// Add product.
+	ProductDTO addProduct(String name, MultipartFile file, String description, double price, int quantity, int promo,
+			String status, String brand, long categoryId);
+
+	// Update product.
+	ProductDTO updateProduct(long productId, String name, MultipartFile file, String description, double price,
+			int quantity, int promo, String status, String brand, long categoryId);
+
+	// Display products by id.
+	ProductDTO findById(long productId);
+
+	// Delete product by id.
+	boolean deleteById(long productId);
+
+	// Display product list.
+	List<ProductDTO> getProduct();
 
 }

@@ -6,9 +6,12 @@ import java.util.stream.Collectors;
 
 import com.mart.entity.Order;
 
+import lombok.Data;
+
+@Data
 public class OrderDTO {
 
-	private int id;
+	private long id;
 	private double priceTotal;
 	private Date createdDate;
 	private Date updatedDate;
@@ -17,83 +20,38 @@ public class OrderDTO {
 	private String payment;
 	private String phone;
 	private List<OrderDetailDTO> orderDetailDTOs;
-	
+
 	public OrderDTO(Order order) {
-        this.id = order.getId();
-        this.priceTotal = order.getPriceTotal();
-        this.createdDate = order.getCreatedDate();
-        this.updatedDate = order.getUpdatedDate();
-        this.address = order.getAddress();
-        this.status = order.getStatus();
-        this.payment = order.getPayment();
-        this.phone = order.getPhone();
-        this.orderDetailDTOs = order.getOrderDetails()
-                                    .stream()
-                                    .map(OrderDetailDTO::new)
-                                    .collect(Collectors.toList());
-    }
-	
+		this.id = order.getId();
+		this.priceTotal = order.getPriceTotal();
+		this.createdDate = order.getCreatedDate();
+		this.updatedDate = order.getUpdatedDate();
+		this.address = order.getAddress();
+		this.status = order.getStatus();
+		this.payment = order.getPayment();
+		this.phone = order.getPhone();
+		this.orderDetailDTOs = order.getOrderDetails().stream().map(OrderDetailDTO::new).collect(Collectors.toList());
+	}
+
+	public static OrderDTO toBasicOrderDTO(Order order) {
+		return new OrderDTO(order.getId(), order.getPriceTotal(), order.getCreatedDate(), order.getUpdatedDate(), order.getAddress(), order.getStatus(), order.getPayment(), order.getPayment());
+	}
+
 	public OrderDTO() {
 		super();
 	}
 
-	public int getId() {
-		return id;
-	}
-	public void setId(int id) {
+	public OrderDTO(long id, double priceTotal, Date createdDate, Date updatedDate, String address, String status,
+			String payment, String phone) {
+		super();
 		this.id = id;
-	}
-	public double getPriceTotal() {
-		return priceTotal;
-	}
-	public void setPriceTotal(double priceTotal) {
 		this.priceTotal = priceTotal;
-	}
-	public Date getCreatedDate() {
-		return createdDate;
-	}
-	public void setCreatedDate(Date createdDate) {
 		this.createdDate = createdDate;
-	}
-	public Date getUpdatedDate() {
-		return updatedDate;
-	}
-	public void setUpdatedDate(Date updatedDate) {
 		this.updatedDate = updatedDate;
-	}
-	public String getAddress() {
-		return address;
-	}
-	public void setAddress(String address) {
 		this.address = address;
-	}
-	public String getStatus() {
-		return status;
-	}
-	public void setStatus(String status) {
 		this.status = status;
-	}
-	public String getPayment() {
-		return payment;
-	}
-	public void setPayment(String payment) {
 		this.payment = payment;
-	}
-	public List<OrderDetailDTO> getOrderDetailDTOs() {
-		return orderDetailDTOs;
-	}
-	public void setOrderDetailDTOs(List<OrderDetailDTO> orderDetailDTOs) {
-		this.orderDetailDTOs = orderDetailDTOs;
-	}
-
-	public String getPhone() {
-		return phone;
-	}
-
-	public void setPhone(String phone) {
 		this.phone = phone;
 	}
-	
-	
-	
+
 }

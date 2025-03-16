@@ -7,8 +7,6 @@ import com.mart.entity.KeyRatingProduct;
 import com.mart.entity.RatingProduct;
 
 @Repository
-public interface RatingProductRepository extends JpaRepository<RatingProduct, KeyRatingProduct>{
-	
-	
+public interface RatingProductRepository extends JpaRepository<RatingProduct, KeyRatingProduct> {
 
 }

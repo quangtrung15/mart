@@ -2,9 +2,11 @@ package com.mart.service;
 
 import org.springframework.stereotype.Service;
 
+import com.mart.dto.RatingProductDTO;
+
 @Service
 public interface RatingProductService {
 
-	boolean ratingProduct(int userId, int productId, int ratePoint, String comment);
+	RatingProductDTO ratingProduct(long userId, long productId, int ratePoint, String comment);
 
 }

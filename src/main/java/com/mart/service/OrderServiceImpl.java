@@ -1,24 +1,37 @@
 package com.mart.service;
 
+import java.awt.Desktop;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.expression.ParseException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mart.config.Config;
 import com.mart.dto.OrderDTO;
 import com.mart.entity.KeyOrderDetail;
 import com.mart.entity.Order;
 import com.mart.entity.OrderDetail;
+import com.mart.entity.Product;
 import com.mart.entity.User;
 import com.mart.repository.OrderDetailRepository;
 import com.mart.repository.OrderRepository;
+import com.mart.repository.ProductRepository;
 import com.mart.repository.UserRepository;
+import com.mart.response.ResponsePayment;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -30,82 +43,80 @@ public class OrderServiceImpl implements OrderService {
 	UserRepository userRepository;
 
 	@Autowired
+	ProductRepository productRepository;
+
+	@Autowired
 	OrderDetailRepository orderDetailRepository;
 
 	@Override
-	@Transactional(rollbackFor = Exception.class)
-	public boolean createOrder(int userId, String address, String createdDate, List<OrderDetail> orderDetails,
-			String payment, String phone) {
+	@Transactional
+	public OrderDTO createOrder(long userId, String address, List<OrderDetail> orderDetails, String payment,
+			String phone) {
 
 		try {
-			// Kiểm tra User có tồn tại không
+			// Check if User exists
 			User user = userRepository.findById(userId)
 					.orElseThrow(() -> new RuntimeException("User with ID " + userId + " not found!"));
 
-			// Kiểm tra xem danh sách sản phẩm có null không.
+			// Check product list
 			if (orderDetails == null || orderDetails.isEmpty()) {
-				throw new RuntimeException("Danh sách sản phẩm không được để trống!");
+				throw new RuntimeException("Product list cannot be empty!");
 			}
 
-			// Tạo Order mới và gán thông tin User
+			// Create new Order
 			Order order = new Order();
 			order.setUser(user);
-
-			// Chuyển đổi createdDate từ String sang Date
-			SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-			Date created_date = simpleDateFormat.parse(createdDate);
-			order.setCreatedDate(created_date);
-
 			order.setAddress(address);
 			order.setPayment(payment);
 			order.setPhone(phone);
 
-			// Lưu Order trước để có ID
+			// Save Order to get ID before creating OrderDetail
 			order = orderRepository.save(order);
 
-			// Tính tổng giá trị hóa đơn
 			double totalPrice = 0;
-			for (OrderDetail data : orderDetails) {
 
+			List<OrderDetail> savedOrderDetails = new ArrayList<>(); // Create a new list to store the OrderDetails
+
+			for (OrderDetail data : orderDetails) {
 				OrderDetail orderDetail = new OrderDetail();
 				orderDetail.setQuantity(data.getQuantity());
 				orderDetail.setProduct(data.getProduct());
 				orderDetail.setOrder(order);
 
-				// Tạo khóa chính tổng hợp KeyOrderDetail
-				KeyOrderDetail keyOrderDetail = new KeyOrderDetail();
-				keyOrderDetail.setOrderId(order.getId());
-				keyOrderDetail.setProductId(data.getProduct().getId());
+				// Assign ID after order.getId()
+				KeyOrderDetail keyOrderDetail = new KeyOrderDetail(order.getId(), data.getProduct().getId());
 				orderDetail.setKeyOrderDetail(keyOrderDetail);
 
 				double priceProduct = data.getProduct().getPrice();
 				totalPrice += data.getQuantity() * priceProduct;
 
+				savedOrderDetails.add(orderDetail); // Save and add to list
+
 				orderDetailRepository.save(orderDetail);
 			}
 
-			// Cập nhật tổng giá trị hóa đơn
-			order.setPriceTotal(totalPrice);
-			orderRepository.save(order); // Lưu lại Order sau khi cập nhật giá
+			order.setPriceTotal(totalPrice); // Update total order value
+			order.setOrderDetails(savedOrderDetails);
+			orderRepository.save(order);
 
-			return true;
+			return new OrderDTO(order);
 		} catch (Exception e) {
-			throw new RuntimeException("Lỗi hệ thống: " + e.getMessage(), e);
+			throw new RuntimeException("Order creation error: " + e.getMessage(), e);
 		}
 	}
 
-	@Transactional
 	@Override
-	public boolean updateOrder(int orderId, int userId, String updatedDate, String address,
+	@Transactional
+	public OrderDTO updateOrder(long orderId, long userId, String updatedDate, String address,
 			List<OrderDetail> orderDetails, String payment, String phone) {
 
 		try {
 
-			// Kiểm tra Order có tồn tại không
+			// Check if Order exists
 			Order order = orderRepository.findById(orderId)
 					.orElseThrow(() -> new RuntimeException("Order with ID " + orderId + " not found!"));
 
-			// Kiểm tra User có tồn tại không
+			// Check if User exists
 			User user = userRepository.findById(userId)
 					.orElseThrow(() -> new RuntimeException("User with ID " + userId + " not found!"));
 
@@ -119,12 +130,15 @@ public class OrderServiceImpl implements OrderService {
 			order.setUser(user);
 
 			if (orderDetails == null || orderDetails.isEmpty()) {
-				throw new RuntimeException("Danh sách sản phẩm không được để trống!");
+				throw new RuntimeException("Product list cannot be empty!");
 			}
 
 			orderDetailRepository.deleteByOrderId(order.getId());
 
 			double priceTotal = 0;
+
+			List<OrderDetail> savedOrderDetails = new ArrayList<>(); // Create a new list to store the OrderDetails
+
 			for (OrderDetail data : orderDetails) {
 
 				OrderDetail orderDetail = new OrderDetail();
@@ -140,23 +154,25 @@ public class OrderServiceImpl implements OrderService {
 				double priceProduct = data.getProduct().getPrice();
 				priceTotal += data.getQuantity() * priceProduct;
 
+				savedOrderDetails.add(orderDetail);
+
 				orderDetailRepository.save(orderDetail);
 
 			}
 
 			order.setPriceTotal(priceTotal);
+			order.setOrderDetails(savedOrderDetails);
 			orderRepository.save(order);
-
-			return true;
+			return new OrderDTO(order);
 		} catch (Exception e) {
-			throw new RuntimeException("Lỗi khi cập nhật đơn hàng: " + e.getMessage(), e);
+			throw new RuntimeException("Error updating order: " + e.getMessage(), e);
 		}
 
 	}
 
 	@Transactional
 	@Override
-	public boolean deleteOrder(int orderId) {
+	public boolean deleteOrder(long orderId) {
 
 		try {
 
@@ -170,76 +186,25 @@ public class OrderServiceImpl implements OrderService {
 			return true;
 
 		} catch (Exception e) {
-			throw new RuntimeException("Lỗi khi xóa đơn hàng: " + e.getMessage(), e);
+			throw new RuntimeException("Error deleting order: " + e.getMessage(), e);
 		}
 
 	}
 
-//	@Override
-//	public List<OrderDTO> getOrderByUserId(int userId) {
-//
-//		List<Order> orders = orderRepository.getOrderByUserId(userId);
-//
-//		if (orders == null || orders.isEmpty()) {
-//			throw new RuntimeException("Không có sản phẩm nào!");
-//		}
-//
-//		List<OrderDTO> orderDTOs = new ArrayList<OrderDTO>();
-//
-//		for (Order data : orders) {
-//
-//			OrderDTO orderDTO = new OrderDTO();
-//			orderDTO.setId(data.getId());
-//			orderDTO.setPriceTotal(data.getPriceTotal());
-//			orderDTO.setCreatedDate(data.getCreatedDate());
-//			orderDTO.setUpdatedDate(data.getUpdatedDate());
-//			orderDTO.setAddress(data.getAddress());
-//			orderDTO.setStatus(data.getStatus());
-//			orderDTO.setPayment(data.getPayment());
-//
-//			List<OrderDetailDTO> orderDetailDTOs = new ArrayList();
-//
-//			for (OrderDetail data1 : data.getOrderDetails()) {
-//
-//				OrderDetailDTO orderDetailDTO = new OrderDetailDTO();
-//				orderDetailDTO.setQuantity(data1.getQuantity());
-//
-//				ProductDTO productDTO = new ProductDTO();
-//				productDTO.setId(data1.getProduct().getId());
-//				productDTO.setName(data1.getProduct().getName());
-//				productDTO.setImage(data1.getProduct().getImage());
-//				productDTO.setDescription(data1.getProduct().getDescription());
-//				productDTO.setPrice(data1.getProduct().getPrice());
-//				productDTO.setQuantity(data1.getProduct().getQuantity());
-//				productDTO.setPromo(data1.getProduct().getPromo());
-//				productDTO.setStatus(data1.getProduct().getStatus());
-//				productDTO.setBrand(data1.getProduct().getBrand());
-//				orderDetailDTO.setProductDTO(productDTO);
-//
-//				orderDetailDTOs.add(orderDetailDTO);
-//			}
-//			orderDTO.setOrderDetailDTOs(orderDetailDTOs);
-//			orderDTOs.add(orderDTO);
-//
-//		}
-//
-//		return orderDTOs;
-//	}
-
 	@Override
-	public List<OrderDTO> getOrderByUserId(int userId) {
+	public List<OrderDTO> getOrderByUserId(long userId) {
 
 		List<Order> orders = orderRepository.getOrderByUserId(userId);
 
 		if (orders.isEmpty()) {
-			throw new RuntimeException("Không có đơn hàng nào!");
+			throw new RuntimeException("No orders!");
 		}
 
 		return orders.stream().map(OrderDTO::new).collect(Collectors.toList());
 	}
 
 	@Override
-	public boolean changeOrderStatus(int userId, int orderId, String status) {
+	public OrderDTO changeOrderStatus(long userId, long orderId, String status) {
 
 		try {
 
@@ -251,12 +216,47 @@ public class OrderServiceImpl implements OrderService {
 
 			order.setStatus(status);
 			orderRepository.save(order);
-			return true;
+			return OrderDTO.toBasicOrderDTO(order);
 
 		} catch (Exception e) {
 			throw new RuntimeException("Lỗi thay đổi trạng thái đơn hàng: " + e.getMessage(), e);
 		}
 
+	}
+
+	@Override
+	public String orderPayment(long orderId) {
+		try {
+			Optional<Order> orderOptional = orderRepository.findById(orderId);
+
+			if (orderOptional.isEmpty()) {
+				throw new RuntimeException("Order not found: " + orderId);
+			}
+
+			Order order = orderOptional.get();
+
+			if (!"Thanh toán online".equals(order.getPayment())) {
+				throw new RuntimeException("Order is not for online payment: " + orderId);
+			}
+
+			long amount = ((long) order.getPriceTotal()) * 100;
+			String url = "http://localhost:8080/payment/create?amount=" + amount + "&vnp_TxnRef=" + orderId;
+
+			RestTemplate restTemplate = new RestTemplate();
+			return restTemplate.getForObject(url, String.class);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("Payment processing failed: " + e.getMessage(), e);
+		}
+	}
+
+	public void updateOrderPaymentStatus(String orderId, String status) {
+		Order order = orderRepository.findById(Integer.parseInt(orderId))
+				.orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+
+		order.setStatus(status);
+		orderRepository.save(order);
 	}
 
 }

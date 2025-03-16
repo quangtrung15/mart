@@ -1,6 +1,7 @@
 package com.mart.entity;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 import jakarta.persistence.Column;
@@ -11,80 +12,44 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Entity(name = "carts")
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
+@Entity
+@Table(name = "carts")
 public class Cart {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private int id;
-	
+	private long id;
+
 	@Column(name = "price_total")
 	private double priceTotal;
-	
+
 	@Column(name = "created_date")
 	private Date createdDate;
-	
+
 	@Column(name = "updated_date")
 	private Date updatedDate;
-	
+
 	@ManyToOne
 	@JoinColumn(name = "user_id")
 	private User user;
-	
+
 	@OneToMany(mappedBy = "cart")
-	private Set<CartDetail> cartDetails;
+	private List<CartDetail> cartDetails;
 
-	public int getId() {
-		return id;
+	@PrePersist
+	protected void prePersist() {
+	    if (this.createdDate == null) {
+	        this.createdDate = new Date(); // Chỉ gán nếu giá trị chưa được đặt
+	    }
 	}
 
-	public void setId(int id) {
-		this.id = id;
-	}
-
-	public double getPriceTotal() {
-		return priceTotal;
-	}
-
-	public void setPriceTotal(double priceTotal) {
-		this.priceTotal = priceTotal;
-	}
-
-	public Date getCreatedDate() {
-		return createdDate;
-	}
-
-	public void setCreatedDate(Date createdDate) {
-		this.createdDate = createdDate;
-	}
-
-	public Date getUpdatedDate() {
-		return updatedDate;
-	}
-
-	public void setUpdatedDate(Date updatedDate) {
-		this.updatedDate = updatedDate;
-	}
-
-	public User getUser() {
-		return user;
-	}
-
-	public void setUser(User user) {
-		this.user = user;
-	}
-
-	public Set<CartDetail> getCartDetails() {
-		return cartDetails;
-	}
-
-	public void setCartDetails(Set<CartDetail> cartDetails) {
-		this.cartDetails = cartDetails;
-	}
-	
-	
-	
-	
-	
 }

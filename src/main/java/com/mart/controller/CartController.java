@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mart.entity.CartDetail;
-import com.mart.request.ResponseData;
+import com.mart.response.ResponseData;
 import com.mart.service.CartService;
 
 @RestController
@@ -26,11 +26,10 @@ public class CartController {
 	CartService cartService;
 
 	@PostMapping("/create")
-	public ResponseEntity<?> createCart(@RequestParam int userId, @RequestParam String createdDate,
-			@RequestBody List<CartDetail> cartDetails) {
+	public ResponseEntity<?> createCart(@RequestParam int userId, @RequestBody List<CartDetail> cartDetails) {
 
 		ResponseData responseData = new ResponseData();
-		responseData.setData(cartService.createCart(userId, createdDate, cartDetails));
+		responseData.setData(cartService.createCart(userId, cartDetails));
 		responseData.setSuccess(true);
 		return new ResponseEntity(responseData, HttpStatus.OK);
 
@@ -57,11 +56,21 @@ public class CartController {
 
 	}
 
-	@GetMapping("/get")
+	@GetMapping("/get-cart-by-user")
 	public ResponseEntity<?> getCartByUserId(int userId) {
 
 		ResponseData responseData = new ResponseData();
 		responseData.setData(cartService.getCartByUserId(userId));
+		responseData.setSuccess(true);
+		return new ResponseEntity(responseData, HttpStatus.OK);
+
+	}
+
+	@GetMapping("/get-cart-by-id")
+	public ResponseEntity<?> getCartById(int cartId) {
+
+		ResponseData responseData = new ResponseData();
+		responseData.setData(cartService.getCartById(cartId));
 		responseData.setSuccess(true);
 		return new ResponseEntity(responseData, HttpStatus.OK);
 

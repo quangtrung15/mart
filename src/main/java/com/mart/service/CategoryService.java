@@ -5,15 +5,26 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.mart.dto.CategoryDTO;
+import com.mart.entity.Category;
 
 @Service
 public interface CategoryService {
 
-	// Hiển thị danh sách sản phẩm với từng thể loại.
-	CategoryDTO getProductsByCategoryId(int id);
+	// Display product list by category
+	CategoryDTO getProductsByCategoryId(long categoryId);
 
-	// Tìm kiếm sản phẩm theo thể loại, khoảng giá, tên, thương hiệu.
-	List<CategoryDTO> findByProducts(Integer category_id, Double minPrice, Double maxPrice, String name, String brand);
+	// Search products by category, price range, name, brand
+	List<CategoryDTO> findByProducts(Long category_id, Double minPrice, Double maxPrice, String name, String brand);
 
-	boolean addCategory(String name);
+	// Add Category
+	Category addCategory(String name);
+
+	// Display a list of categories
+	List<CategoryDTO> getCategory();
+	
+	// Update Category
+	CategoryDTO updateCategory(long categoryId, String name);
+	
+	// Delete Category
+	boolean deleteCategory(long categoryId);
 }

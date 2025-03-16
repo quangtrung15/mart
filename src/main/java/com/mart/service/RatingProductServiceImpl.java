@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.mart.dto.RatingProductDTO;
 import com.mart.entity.KeyRatingProduct;
 import com.mart.entity.Product;
 import com.mart.entity.RatingProduct;
@@ -26,7 +27,7 @@ public class RatingProductServiceImpl implements RatingProductService {
 	RatingProductRepository ratingProductRepository;
 
 	@Override
-	public boolean ratingProduct(int userId, int productId, int ratePoint, String comment) {
+	public RatingProductDTO ratingProduct(long userId, long productId, int ratePoint, String comment) {
 
 		try {
 			// Kiểm tra User có tồn tại không
@@ -50,7 +51,7 @@ public class RatingProductServiceImpl implements RatingProductService {
 			ratingProduct.setRatePoint(ratePoint);
 			ratingProduct.setComment(comment);
 			ratingProductRepository.save(ratingProduct);
-			return true;
+			return new RatingProductDTO(ratingProduct);
 
 		} catch (Exception e) {
 			throw new RuntimeException("Lỗi khi đánh giá sản phẩm: " + e.getMessage(), e);

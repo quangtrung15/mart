@@ -4,38 +4,20 @@ import java.io.Serializable;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
 @Embeddable
 public class KeyOrderDetail implements Serializable {
-	
+
 	@Column(name = "order_id")
-    private int orderId;
-    
-    @Column(name = "product_id")
-    private int productId;
+	private long orderId;
 
-	public KeyOrderDetail() {
-		super();
-	}
+	@Column(name = "product_id")
+	private long productId;
 
-	public int getOrderId() {
-		return orderId;
-	}
-
-	public void setOrderId(int orderId) {
-		this.orderId = orderId;
-	}
-
-	public int getProductId() {
-		return productId;
-	}
-
-	public void setProductId(int productId) {
-		this.productId = productId;
-	}
-
-	
-	
-	
-	
 }

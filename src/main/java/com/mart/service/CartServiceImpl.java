@@ -3,9 +3,8 @@ package com.mart.service;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
+import java.util.Optional;
 import java.text.SimpleDateFormat;
-import java.text.ParseException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,6 +19,7 @@ import com.mart.entity.KeyCartDetail;
 import com.mart.entity.User;
 import com.mart.repository.CartDetailRepository;
 import com.mart.repository.CartRepository;
+import com.mart.repository.ProductRepository;
 import com.mart.repository.UserRepository;
 
 @Service
@@ -34,11 +34,14 @@ public class CartServiceImpl implements CartService {
 	@Autowired
 	CartDetailRepository cartDetailRepository;
 
-	@Transactional
-	@Override
-	public Cart createCart(int userId, String createdDate, List<CartDetail> cartDetails) {
+	@Autowired
+	ProductRepository productRepository;
 
-		// Kiểm tra User có tồn tại không
+	@Override
+	@Transactional
+	public CartDTO createCart(long userId, List<CartDetail> cartDetails) {
+
+		// Kiểm tra User có tồn tại không.
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new RuntimeException("User with ID " + userId + " not found!"));
 
@@ -52,20 +55,14 @@ public class CartServiceImpl implements CartService {
 			Cart cart = new Cart();
 			cart.setUser(user);
 
-			// Chuyển đổi createdDate từ String sang Date
-			SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-			Date created_date = simpleDateFormat.parse(createdDate);
-			cart.setCreatedDate(created_date);
-
 			// Lưu Cart trước để có ID
 			cart = cartRepository.save(cart);
 
-			// 🔹 Lấy ID của Cart vừa lưu
-			int newCartId = cart.getId();
-			System.out.println("Cart vừa được lưu có ID: " + newCartId);
-
 			// Tính tổng giá trị hóa đơn
 			double totalPrice = 0;
+
+			List<CartDetail> saveCartDetails = new ArrayList<>();
+
 			for (CartDetail data : cartDetails) {
 				CartDetail cartDetail = new CartDetail();
 				cartDetail.setQuantity(data.getQuantity());
@@ -81,13 +78,16 @@ public class CartServiceImpl implements CartService {
 				double priceProduct = data.getProduct().getPrice();
 				totalPrice += data.getQuantity() * priceProduct;
 
+				saveCartDetails.add(cartDetail);
+
 				cartDetailRepository.save(cartDetail);
 			}
 
 			// Cập nhật tổng giá trị hóa đơn
 			cart.setPriceTotal(totalPrice);
+			cart.setCartDetails(saveCartDetails);
 			cartRepository.save(cart);
-			return cart;
+			return new CartDTO(cart);
 
 		} catch (Exception e) {
 			throw new RuntimeException("Lỗi khi tạo giỏ hàng: " + e.getMessage(), e);
@@ -96,57 +96,7 @@ public class CartServiceImpl implements CartService {
 
 	@Transactional
 	@Override
-	public Cart updateCart(int userId, int cartId, String updatedDate, List<CartDetail> cartDetails) {
-
-		// Kiểm tra User có tồn tại không
-		User user = userRepository.findById(userId)
-				.orElseThrow(() -> new RuntimeException("User with ID " + userId + " not found!"));
-
-		// Kiểm tra Cart có tồn tại không
-		Cart cart = cartRepository.findById(cartId)
-				.orElseThrow(() -> new RuntimeException("Cart with ID " + cartId + " not found!"));
-
-		try {
-			// Chuyển đổi updatedDate từ String sang Date
-			SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-			Date updated_date = simpleDateFormat.parse(updatedDate);
-			cart.setUpdatedDate(updated_date);
-
-			// Xóa chi tiết giỏ hàng cũ trước khi cập nhật
-			cartDetailRepository.deleteByCartId(cartId);
-
-			// Tính tổng giá trị hóa đơn mới
-			double totalPrice = 0;
-			for (CartDetail data : cartDetails) {
-				CartDetail cartDetail = new CartDetail();
-				cartDetail.setQuantity(data.getQuantity());
-				cartDetail.setProduct(data.getProduct());
-				cartDetail.setCart(cart);
-
-				// Tạo khóa chính tổng hợp KeyCartDetail
-				KeyCartDetail keyCartDetail = new KeyCartDetail();
-				keyCartDetail.setCartId(cart.getId());
-				keyCartDetail.setProductId(data.getProduct().getId());
-				cartDetail.setKeyCartDetail(keyCartDetail);
-
-				double priceProduct = data.getProduct().getPrice();
-				totalPrice += data.getQuantity() * priceProduct;
-
-				cartDetailRepository.save(cartDetail);
-			}
-
-			// Cập nhật tổng giá trị hóa đơn
-			cart.setPriceTotal(totalPrice);
-			return cartRepository.save(cart); // Trả về Cart sau khi cập nhật
-
-		} catch (Exception e) {
-			throw new RuntimeException("Lỗi khi cập nhật giỏ hàng: " + e.getMessage(), e);
-		}
-	}
-
-	@Transactional
-	@Override
-	public boolean deleteCart(int cartId) {
+	public boolean deleteCart(long cartId) {
 		try {
 			// Kiểm tra xem giỏ hàng có tồn tại không
 			Cart cart = cartRepository.findById(cartId)
@@ -163,7 +113,7 @@ public class CartServiceImpl implements CartService {
 	}
 
 	@Override
-	public List<CartDTO> getCartByUserId(int userId) {
+	public List<CartDTO> getCartByUserId(long userId) {
 
 		try {
 			List<Cart> carts = cartRepository.findByUserId(userId);
@@ -189,16 +139,7 @@ public class CartServiceImpl implements CartService {
 					CartDetailDTO cartDetailDTO = new CartDetailDTO();
 					cartDetailDTO.setQuantity(data1.getQuantity());
 
-					ProductDTO productDTO = new ProductDTO();
-					productDTO.setId(data1.getProduct().getId());
-					productDTO.setName(data1.getProduct().getName());
-					productDTO.setImage(data1.getProduct().getImage());
-					productDTO.setDescription(data1.getProduct().getDescription());
-					productDTO.setBrand(data1.getProduct().getBrand());
-					productDTO.setPrice(data1.getProduct().getPrice());
-					productDTO.setStatus(data1.getProduct().getStatus());
-					productDTO.setQuantity(data1.getProduct().getQuantity());
-					productDTO.setPromo(data1.getProduct().getPromo());
+					ProductDTO productDTO = new ProductDTO(data1.getProduct());
 
 					cartDetailDTO.setProductDTO(productDTO);
 					cartDetailDTOs.add(cartDetailDTO);
@@ -216,7 +157,7 @@ public class CartServiceImpl implements CartService {
 	}
 
 	@Override
-	public CartDTO getCartById(int cartId) {
+	public CartDTO getCartById(long cartId) {
 
 		try {
 			// Kiểm tra xem giỏ hàng có tồn tại không
@@ -235,16 +176,7 @@ public class CartServiceImpl implements CartService {
 				CartDetailDTO cartDetailDTO = new CartDetailDTO();
 				cartDetailDTO.setQuantity(data.getQuantity());
 
-				ProductDTO productDTO = new ProductDTO();
-				productDTO.setId(data.getProduct().getId());
-				productDTO.setName(data.getProduct().getName());
-				productDTO.setImage(data.getProduct().getImage());
-				productDTO.setDescription(data.getProduct().getDescription());
-				productDTO.setBrand(data.getProduct().getBrand());
-				productDTO.setPrice(data.getProduct().getPrice());
-				productDTO.setStatus(data.getProduct().getStatus());
-				productDTO.setQuantity(data.getProduct().getQuantity());
-				productDTO.setPromo(data.getProduct().getPromo());
+				ProductDTO productDTO = new ProductDTO(data.getProduct());
 
 				cartDetailDTO.setProductDTO(productDTO);
 				cartDetailDTOs.add(cartDetailDTO);
@@ -255,6 +187,60 @@ public class CartServiceImpl implements CartService {
 
 		} catch (Exception e) {
 			throw new RuntimeException("Lỗi hiển thị sản phẩm thêm vào giỏ hàng " + e.getMessage(), e);
+		}
+
+	}
+
+	@Override
+	public CartDTO updateCart(long userId, long cartId, String updatedDate, List<CartDetail> cartDetails) {
+
+		try {
+
+			Optional<User> userOptional = userRepository.findById(userId);
+			Optional<Cart> cartOptional = cartRepository.findById(cartId);
+			if (userOptional.isEmpty() && cartOptional.isEmpty()) {
+				throw new RuntimeException();
+			}
+
+			User user = userOptional.get();
+			Cart cart = cartOptional.get();
+
+			cartDetailRepository.deleteByCartId(cart.getId());
+
+			SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			Date updated_date = simpleDateFormat.parse(updatedDate);
+			cart.setUpdatedDate(updated_date);
+
+			double priceTotal = 0;
+
+			List<CartDetail> saveCartDetails = new ArrayList<>();
+
+			for (CartDetail data : cartDetails) {
+				CartDetail cartDetail = new CartDetail();
+				cartDetail.setCart(cart);
+				cartDetail.setProduct(data.getProduct());
+				cartDetail.setQuantity(data.getQuantity());
+
+				KeyCartDetail keyCartDetail = new KeyCartDetail(cart.getId(), data.getProduct().getId());
+				cartDetail.setKeyCartDetail(keyCartDetail);
+
+				double priceProduct = data.getQuantity() * data.getProduct().getPrice();
+				priceTotal += priceProduct;
+
+				saveCartDetails.add(cartDetail);
+
+				cartDetailRepository.save(cartDetail);
+
+			}
+
+			cart.setPriceTotal(priceTotal);
+			cart.setCartDetails(saveCartDetails);
+			cartRepository.save(cart);
+
+			return new CartDTO(cart);
+
+		} catch (Exception e) {
+			throw new RuntimeException();
 		}
 
 	}

@@ -2,6 +2,7 @@ package com.mart.util;
 
 import java.util.Date;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -9,7 +10,9 @@ import io.jsonwebtoken.*;
 
 @Component
 public class JwtUtil {
-	private final String SECRET_KEY = "fqKOx6t+zZhHZuo0NMzRo27dTBmx0JpMsIM4qnOhNQE=";
+
+	@Value("${jwt.privateKey}")
+	private String SECRET_KEY;
 
 	public String generateToken(UserDetails userDetails) {
 		return Jwts.builder().setSubject(userDetails.getUsername()).claim("roles", userDetails.getAuthorities())

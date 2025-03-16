@@ -14,19 +14,39 @@ import java.util.Random;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import jakarta.servlet.http.HttpServletRequest;
 
 public class Config {
 
-	public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-	public static String vnp_ReturnUrl = "https://46aa-171-253-59-197.ngrok-free.app";
-	public static String vnp_TmnCode = "E1IO2296";
-	public static String secretKey = "DQ0AKMUP09ORH4OVB865FYFO9DSEOLNT";
-	public static String vnp_ApiUrl = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
-	public static String vnp_Version = "2.1.0";
-	public static String vnp_Command = "pay";
-	public static String orderType = "other";
-	public static String vnp_BankCode = "VNBANK";
+	@Value("${security.vnp_PayUrl}")
+	public static String vnp_PayUrl;
+
+	@Value("${security.vnp_ReturnUrl}")
+	public static String vnp_ReturnUrl;
+
+	@Value("${security.vnp_TmnCode}")
+	public static String vnp_TmnCode;
+
+	@Value("${security.secretKey}")
+	public static String secretKey;
+
+	@Value("${security.vnp_ApiUrl}")
+	public static String vnp_ApiUrl;
+
+	@Value("${security.vnp_Version}")
+	public static String vnp_Version;
+
+	@Value("${security.vnp_Command}")
+	public static String vnp_Command;
+
+	@Value("${security.orderType}")
+	public static String orderType;
+	
+	@Value("${security.vnp_BankCode}")
+	public static String vnp_BankCode;
+	
 	public static long amount;
 
 	public static String md5(String message) {
